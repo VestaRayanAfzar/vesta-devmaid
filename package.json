@@ -1,0 +1,33 @@
+{
+  "name": "@vesta/devmaid",
+  "version": "0.1.4",
+  "description": "Vesta Develeopment assistant",
+  "license": "Apache-2.0",
+  "main": "build/index.js",
+  "typings": "index.d.ts",
+  "repository": "https://github.com/VestaRayanAfzar/vesta-devmaid.git",
+  "scripts": {
+    "dev": "tsc -w -p .",
+    "prepare": "gulp prepare",
+    "dev:es6": "gulp dev:es6",
+    "publish": "gulp publish"
+  },
+  "author": "hbtb <bishehsary@gmail.com>",
+  "contributors": [
+    "javadkh2 <khalilian.javad@gmail.com>"
+  ],
+  "bugs": {
+    "url": "https://github.com/VestaRayanAfzar/vesta-devmaid/issues",
+    "email": "bishehsary@gmail.com"
+  },
+  "dependencies": {
+    "fs-extra": "^3.0.1",
+    "gulp": "^3.9.1",
+    "typescript": "^2.3.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^3.0.1",
+    "@types/gulp": "^4.0.2",
+    "@types/node": "^7.0.18"
+  }
+}
