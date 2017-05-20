@@ -133,7 +133,10 @@ export class TypescriptTarget {
     private transformPkg(target: string) {
         let json = JSON.parse(fse.readFileSync('./package.json', {encoding: 'utf8'}));
         if (target === 'es5') {
-            json.name += '-es5';
+            // only append `-es5` if there is an es6 target
+            if (this.config.targets.length > 1) {
+                json.name += '-es5';
+            }
             json.devDependencies.typescript = '2.0';
             json.devDependencies['@types/es6-promise'] = '^0.0.32';
         }
