@@ -1,8 +1,10 @@
-import * as gulp from "gulp";
-import * as fse from "fs-extra";
-import * as ts from "typescript";
 import {execSync} from "child_process";
+import * as fse from "fs-extra";
 import * as fsPath from "path";
+import * as gulp from "gulp";
+import * as gts from "gulp-typescript";
+import * as ts from "typescript";
+import * as map from "gulp-sourcemaps";
 
 export interface TransformFunction {
     (json: Object, target: string): void;
@@ -34,16 +36,27 @@ interface ExportStatement {
 export class TypescriptTarget {
     private prefix = '\n >>>\t';
     private root;
+    private tsconfig: gts.Settings;
 
     constructor(private config: TargetConfig) {
         if (!config.src) {
             config.src = 'src';
         }
         this.root = fsPath.dirname(config.src);
+        let tsconfigPath = `${this.root}/tsconfig.json`;
+        if (fse.existsSync(tsconfigPath)) {
+            let tsc = JSON.parse(fse.readFileSync(tsconfigPath, {encoding: 'utf8'}));
+            this.tsconfig = tsc.compilerOptions;
+        } else {
+            this.tsconfig = {
+                module: 'commonjs',
+                preserveConstEnums: true,
+                declaration: true,
+            };
+        }
     }
 
     public createTasks() {
-        const sourceFiles = [`${this.config.src}/**`];
         const targets = this.config.targets;
 
         gulp.task('prepare', () => {
@@ -62,14 +75,21 @@ export class TypescriptTarget {
                 execSync(`npm publish ${publishArgs}`, {stdio: 'inherit', cwd: target});
             });
         });
-
+        const sourceFiles = [`${this.config.src}/**`];
         targets.forEach(target => {
-            gulp.task(`copy:${target}`, this.config.genIndex ? ['index'] : [], () => gulp.src(sourceFiles).pipe(gulp.dest(target)));
-            gulp.task(`watch:${target}`, () => {
-                gulp.watch(sourceFiles, [`copy:${target}`]);
+            const tsconfig = this.transformTsc(target);
+            const genIndex = this.config.genIndex;
+            const genSourceMap = tsconfig.sourceMap;
+            gulp.task(`tsc:${target}`, genIndex ? ['index'] : [], () => {
+                let src = gulp.src(sourceFiles);
+                if (genSourceMap) src = src.pipe(map.init(src));
+                let result: gts.CompileStream = src.pipe(gts(tsconfig));
+                result.dts.pipe(gulp.dest(target));
+                return (genSourceMap ? result.js.pipe(map.write()) : result.js).pipe(gulp.dest(target));
             });
-            gulp.task(`dev:${target}`, [`copy:${target}`, `watch:${target}`], () => {
-                execSync('node node_modules/typescript/bin/tsc -w -p .', {stdio: 'inherit', cwd: target});
+            let modifiedSourceFile = genIndex ? sourceFiles.concat([`!${this.config.src}/index.ts`]) : sourceFiles;
+            gulp.task(`dev:${target}`, [`tsc:${target}`], () => {
+                gulp.watch(modifiedSourceFile, [`tsc:${target}`]);
             });
         });
     }
@@ -100,15 +120,14 @@ export class TypescriptTarget {
         });
     }
 
-    private transformTsc(target: string) {
-        let json = JSON.parse(fse.readFileSync('./tsconfig.json', {encoding: 'utf8'}));
-        json.compilerOptions.target = target;
+    private transformTsc(target: string): gts.Settings {
+        let json: gts.Settings = JSON.parse(JSON.stringify(this.tsconfig));
         let transformers = this.config.transform;
         if (transformers && transformers.tsconfig) {
             transformers.tsconfig(json, target);
         }
-        json.include = json.include.map(inc => inc.replace(`${this.config.src}/`, ''));
-        fse.writeFileSync(`./${target}/tsconfig.json`, JSON.stringify(json, null, 2));
+        json.target = target;
+        return json;
     }
 
     private transformPkg(target: string) {
@@ -128,9 +147,6 @@ export class TypescriptTarget {
 
     private createIndexTask() {
         const src = this.config.src;
-        if (this.config.genIndex) {
-            fse.removeSync(`${src}/index.ts`);
-        }
         let contents = this.getAllExports(src);
         let codes = [];
         contents.forEach(({exports, file}) => {
@@ -144,6 +160,7 @@ export class TypescriptTarget {
         let files = fse.readdirSync(path);
         let contents = [];
         files.forEach(file => {
+            if (this.config.genIndex && file == 'index.ts') return;
             let filePath = `${path}/${file}`;
             let stat = fse.statSync(filePath);
             if (stat.isDirectory()) {
@@ -184,5 +201,6 @@ export class TypescriptTarget {
 
     private error(message: string) {
         process.stderr.write(`${this.prefix}${message}\n`);
+        console.error(message);
     }
 }

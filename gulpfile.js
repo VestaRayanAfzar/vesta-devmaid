@@ -6,13 +6,7 @@ const aid = new vesta.TypescriptTarget({
     files: ['.npmignore', 'LICENSE', 'README.md'],
     transform: {
         package: (json, target) => {
-            delete json.devDependencies['@types/gulp'];
-            delete json.devDependencies['@types/node'];
-            delete json.devDependencies['@types/fs-extra'];
-        },
-        tsconfig: (json, target) => {
-            json.compilerOptions.outDir = './';
-            json.exclude = json.exclude = ["node_modules", "**/*.d.ts", "**/*.js"];
+            json.devDependencies = {};
         }
     },
     publish: '--access=public'

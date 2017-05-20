@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "declaration": true,
     "module": "commonjs",
     "target": "es6",
+    "preserveConstEnums": true,
+    "declaration": true,
     "outDir": "./build/"
   },
   "include": [
     "src/**/*.ts"
   ],
   "exclude": [
+    "src/index.ts",
     "node_modules",
     "build",
     "es6"

@@ -1,6 +1,6 @@
 {
   "name": "@vesta/devmaid",
-  "version": "0.1.4",
+  "version": "0.1.7",
   "description": "Vesta Develeopment assistant",
   "license": "Apache-2.0",
   "main": "build/index.js",
@@ -23,11 +23,15 @@
   "dependencies": {
     "fs-extra": "^3.0.1",
     "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^2.6.0",
+    "gulp-typescript": "^3.1.6",
     "typescript": "^2.3.2"
   },
   "devDependencies": {
     "@types/fs-extra": "^3.0.1",
     "@types/gulp": "^4.0.2",
+    "@types/gulp-sourcemaps": "^0.0.30",
+    "@types/gulp-typescript": "^2.13.0",
     "@types/node": "^7.0.18"
   }
 }
