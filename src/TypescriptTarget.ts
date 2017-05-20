@@ -75,28 +75,30 @@ export class TypescriptTarget {
                 execSync(`npm publish ${publishArgs}`, {stdio: 'inherit', cwd: target});
             });
         });
-        const sourceFiles = [`${this.config.src}/**`];
         targets.forEach(target => {
+            let tsSourceFiles = [`../${this.config.src}/**`];
+            let watchSourceFiles = [`${this.config.src}/**`];
             const tsconfig = this.transformTsc(target);
             const genIndex = this.config.genIndex;
             const genSourceMap = tsconfig.sourceMap;
             gulp.task(`tsc:${target}`, genIndex ? ['index'] : [], () => {
-                let src = gulp.src(sourceFiles);
+                let src = gulp.src(tsSourceFiles, {cwd: target});
                 if (genSourceMap) src = src.pipe(map.init(src));
                 let result: gts.CompileStream = src.pipe(gts(tsconfig));
                 result.dts.pipe(gulp.dest(target));
                 return (genSourceMap ? result.js.pipe(map.write()) : result.js).pipe(gulp.dest(target));
             });
-            let modifiedSourceFile = genIndex ? sourceFiles.concat([`!${this.config.src}/index.ts`]) : sourceFiles;
+
+            let modifiedSourceFile = genIndex ? watchSourceFiles.concat([`!${this.config.src}/index.ts`]) : watchSourceFiles;
             gulp.task(`dev:${target}`, [`tsc:${target}`], () => {
-                gulp.watch(modifiedSourceFile, [`tsc:${target}`]);
+                gulp.watch(modifiedSourceFile, {cwd: this.root}, [`tsc:${target}`]);
             });
         });
     }
 
     private createPrepareTask() {
         this.config.targets.forEach(target => {
-            this.message(`Preparing ${target}...`);
+            this.log(`Preparing ${target}...`);
             try {
                 // delete old directories
                 fse.removeSync(target);
@@ -115,7 +117,7 @@ export class TypescriptTarget {
         });
         // installing packages
         this.config.targets.forEach(target => {
-            this.message(`Installing packages for ${target}`);
+            this.log(`Installing packages for ${target}`);
             execSync('yarn install', {stdio: 'inherit', cwd: target});
         });
     }
@@ -198,12 +200,11 @@ export class TypescriptTarget {
         return {exports, file};
     }
 
-    private message(message: string) {
+    private log(message: string) {
         process.stdout.write(`${this.prefix}${message}\n`);
     }
 
     private error(message: string) {
         process.stderr.write(`${this.prefix}${message}\n`);
-        console.error(message);
     }
 }
