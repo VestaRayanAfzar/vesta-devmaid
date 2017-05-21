@@ -18,7 +18,7 @@ export interface TargetConfig {
     // these files will be copied to destination
     files?: Array<string>;
     // source directory, where the index file will be generated
-    src: string;
+    src?: string;
     // modifying config files
     transform?: {
         package?: TransformFunction;
@@ -37,8 +37,12 @@ export class TypescriptTarget {
     private prefix = '\n >>>\t';
     private root;
     private tsconfig: gts.Settings;
+    private redundantTsconfig = ['outFile', 'outDir'];
 
     constructor(private config: TargetConfig) {
+        if (!config) {
+            config = {targets: ['es6']};
+        }
         if (!config.src) {
             config.src = 'src';
         }
@@ -80,13 +84,12 @@ export class TypescriptTarget {
             let watchSourceFiles = [`${this.config.src}/**`];
             const tsconfig = this.transformTsc(target);
             const genIndex = this.config.genIndex;
-            const genSourceMap = tsconfig.sourceMap;
             gulp.task(`tsc:${target}`, genIndex ? ['index'] : [], () => {
                 let src = gulp.src(tsSourceFiles, {cwd: target});
-                if (genSourceMap) src = src.pipe(map.init(src));
+                if (tsconfig.sourceMap) src = src.pipe(map.init(src));
                 let result: gts.CompileStream = src.pipe(gts(tsconfig));
                 result.dts.pipe(gulp.dest(target));
-                return (genSourceMap ? result.js.pipe(map.write()) : result.js).pipe(gulp.dest(target));
+                return (tsconfig.sourceMap ? result.js.pipe(map.write()) : result.js).pipe(gulp.dest(target));
             });
 
             let modifiedSourceFile = genIndex ? watchSourceFiles.concat([`!${this.config.src}/index.ts`]) : watchSourceFiles;
@@ -129,6 +132,7 @@ export class TypescriptTarget {
             transformers.tsconfig(json, target);
         }
         json.target = target;
+        this.redundantTsconfig.forEach(config => delete json[config]);
         return json;
     }
 
@@ -139,8 +143,6 @@ export class TypescriptTarget {
             if (this.config.targets.length > 1) {
                 json.name += '-es5';
             }
-            json.devDependencies.typescript = '2.0';
-            json.devDependencies['@types/es6-promise'] = '^0.0.32';
         }
         delete json.scripts;
         let transformers = this.config.transform;

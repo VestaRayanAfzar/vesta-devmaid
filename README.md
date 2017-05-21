@@ -1,7 +1,10 @@
 # [Vesta](http://vestarayanafzar.com) Development Assistant
  
+Install `yarn`
 
-`gulpfile.js`:
+Install `gulp` [`yarn add --dev gulp`]
+
+Inside your `gulpfile.js`:
 
 ```javascript
 const vesta = require('@vesta/devmaid');
@@ -21,6 +24,7 @@ const config = {
        package: (json, target) => {
            if(target === 'es5'){
                json.dependencies.push('es6-promise', '^4.1.0');
+               json.name = 'mypkg-es5';
            }
        },
        // if you need to modify `compilerOptions` of `tsconfig.json` for each target
@@ -42,3 +46,6 @@ At this point based on your targets, multiple gulp tasks will be added to your g
    * **prepare**: creates folders for each target, copy files into it, and run `yarn install`
    * **dev:[target]**: starts development process for specific target
    * **publish**: publishes the project inside each target folder
+   
+For `tsconfig` the following options will be ignored: `outFile`, `outDir`,
+and `target` will be override.

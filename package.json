@@ -1,6 +1,6 @@
 {
   "name": "@vesta/devmaid",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Vesta Develeopment assistant",
   "license": "Apache-2.0",
   "main": "build/index.js",
