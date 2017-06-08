@@ -5,7 +5,7 @@ import * as gulp from "gulp";
 import * as gts from "gulp-typescript";
 import * as ts from "typescript";
 import * as map from "gulp-sourcemaps";
-
+import {Transform} from "stream";
 export interface TransformFunction {
     (json: Object, target: string): void;
 }
@@ -22,6 +22,7 @@ export interface TargetConfig {
     // modifying config files
     transform?: {
         package?: TransformFunction;
+        module?: (target: string) => { [key: string]: string };
         tsconfig?: TransformFunction;
     },
     // npm publish arguments
@@ -84,8 +85,10 @@ export class TypescriptTarget {
             let watchSourceFiles = [`${this.config.src}/**`];
             const tsconfig = this.transformTsc(target);
             const genIndex = this.config.genIndex;
+            let modules = this.config.transform.module ? this.config.transform.module(target) : {};
             gulp.task(`tsc:${target}`, genIndex ? ['index'] : [], () => {
                 let src = gulp.src(tsSourceFiles, {cwd: target});
+                if (modules) src = src.pipe(this.module(modules));
                 if (tsconfig.sourceMap) src = src.pipe(map.init(src));
                 let result: gts.CompileStream = src.pipe(gts(tsconfig));
                 result.dts.pipe(gulp.dest(target));
@@ -96,6 +99,24 @@ export class TypescriptTarget {
             gulp.task(`dev:${target}`, [`tsc:${target}`], () => {
                 gulp.watch(modifiedSourceFile, {cwd: this.root}, [`tsc:${target}`]);
             });
+        });
+    }
+
+
+    private module(module: { [key: string]: string }): Transform {
+        return new Transform({
+            objectMode: true,
+            transform: function (file:any, encoding, callback) {
+                if (file.contents) {
+                    file.contents = new Buffer(file.contents.toString().replace(/((import)|(export))(\s*.*from\s*)(["'])([^"']*)(["'])/ig, function (match, $1, $2, $3, $4, $5, $6, $7) {
+                        let replace = `${$1}${$4}${$5}${module[$6] ? module[$6] : $6}${$7}`;
+                        // if (module[$6]) console.log(match, ' => ', replace);
+                        return replace;
+                    }));
+                }
+                this.push(file);
+                callback();
+            }
         });
     }
 

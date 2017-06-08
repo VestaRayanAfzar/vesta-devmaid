@@ -7,6 +7,9 @@ const aid = new vesta.TypescriptTarget({
     transform: {
         package: (json, target) => {
             json.devDependencies = {};
+        },
+        module: (target) => {
+            return {'x':'y'};
         }
     },
     publish: '--access=public'
