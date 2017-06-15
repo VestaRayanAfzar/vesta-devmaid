@@ -4,7 +4,6 @@ import * as fsPath from "path";
 import * as gulp from "gulp";
 import * as gts from "gulp-typescript";
 import * as ts from "typescript";
-import * as map from "gulp-sourcemaps";
 import {Transform} from "stream";
 export interface TransformFunction {
     (json: Object, target: string): void;
@@ -80,25 +79,13 @@ export class TypescriptTarget {
                 execSync(`npm publish ${publishArgs}`, {stdio: 'inherit', cwd: target});
             });
         });
+        let watchSourceFiles = [`${this.config.src}/**`];
+        let modifiedSourceFile = this.config.genIndex ? watchSourceFiles.concat([`!${this.config.src}/index.ts`]) : watchSourceFiles;
         targets.forEach(target => {
-            let tsSourceFiles = [`../${this.config.src}/**`];
-            let watchSourceFiles = [`${this.config.src}/**`];
-            const tsconfig = this.transformTsc(target);
-            const genIndex = this.config.genIndex;
-            let modules = this.config.transform.module ? this.config.transform.module(target) : {};
-            gulp.task(`tsc:${target}`, genIndex ? ['index'] : [], () => {
-                let src = gulp.src(tsSourceFiles, {cwd: target});
-                if (modules) src = src.pipe(this.module(modules));
-                if (tsconfig.sourceMap) src = src.pipe(map.init(src));
-                let result: gts.CompileStream = src.pipe(gts(tsconfig));
-                result.dts.pipe(gulp.dest(target));
-                return (tsconfig.sourceMap ? result.js.pipe(map.write()) : result.js).pipe(gulp.dest(target));
+            gulp.task(`dev:${target}`, this.config.genIndex ? ['index'] : [], () => {
+                require('child_process').execSync(`"node_modules/.bin/gulp" tsc:${target}`, {cwd: target, stdio: 'inherit'});
             });
-
-            let modifiedSourceFile = genIndex ? watchSourceFiles.concat([`!${this.config.src}/index.ts`]) : watchSourceFiles;
-            gulp.task(`dev:${target}`, [`tsc:${target}`], () => {
-                gulp.watch(modifiedSourceFile, {cwd: this.root}, [`tsc:${target}`]);
-            });
+            gulp.watch(modifiedSourceFile, {cwd: this.root}, [`dev:${target}`]);
         });
     }
 
@@ -106,7 +93,7 @@ export class TypescriptTarget {
     private module(module: { [key: string]: string }): Transform {
         return new Transform({
             objectMode: true,
-            transform: function (file:any, encoding, callback) {
+            transform: function (file: any, encoding, callback) {
                 if (file.contents) {
                     file.contents = new Buffer(file.contents.toString().replace(/((import)|(export))(\s*.*from\s*)(["'])([^"']*)(["'])/ig, function (match, $1, $2, $3, $4, $5, $6, $7) {
                         let replace = `${$1}${$4}${$5}${module[$6] ? module[$6] : $6}${$7}`;
@@ -135,6 +122,26 @@ export class TypescriptTarget {
             if (this.config.files) {
                 this.config.files.forEach(file => fse.copySync(file, `${target}/${file}`));
             }
+            if (fse.existsSync(`resource/${target}/gulpfile.js`)) {
+                fse.copySync(`resource/${target}/gulpfile.js`, `${target}/gulpfile.js`);
+            } else {
+                fse.copySync(`resource/gulpfile.js`, `${target}/gulpfile.js`);
+            }
+
+            if (fse.existsSync(`resource/${target}/options.json`)) {
+                fse.copySync(`resource/${target}/options.json`, `${target}/options.json`);
+            } else {
+                let compilerOptions: gts.Settings = JSON.parse(JSON.stringify(this.tsconfig));
+                compilerOptions.target = target;
+                let json = {
+                    modules: this.config.transform.module ? this.config.transform.module(target) : {},
+                    compilerOptions: compilerOptions,
+                    src: [`../${this.config.src}/**`]
+                };
+                fse.writeFileSync(`resource/${target}/options.json`,{encoding:'utf8'}, JSON.stringify(json));
+            }
+
+
             // modifying package.json based on target
             this.transformTsc(target);
             this.transformPkg(target);
