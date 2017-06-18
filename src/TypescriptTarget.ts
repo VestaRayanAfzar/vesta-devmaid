@@ -138,7 +138,7 @@ export class TypescriptTarget {
                     compilerOptions: compilerOptions,
                     src: [`../${this.config.src}/**`]
                 };
-                fse.writeFileSync(`resource/${target}/options.json`,{encoding:'utf8'}, JSON.stringify(json));
+                fse.writeFileSync(`${target}/options.json`, JSON.stringify(json), {encoding: 'utf8'});
             }
 
 
