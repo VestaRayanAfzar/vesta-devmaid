@@ -146,11 +146,21 @@ export class TypescriptTarget {
             this.transformTsc(target);
             this.transformPkg(target);
         });
+        let doneCount = 0;
+        var done: Function = (index: number) => {
+            doneCount++;
+            if (doneCount >= this.config.targets.length) {
+                console.log('**** prepare task finished ****');
+                process.exit(); //exit prepare task;
+            }
+        };
         // installing packages
-        this.config.targets.forEach(target => {
+        this.config.targets.forEach((target, index) => {
             this.log(`Installing packages for ${target}`);
             execSync('yarn install', {stdio: 'inherit', cwd: target});
+            done(index);
         });
+
     }
 
     private transformTsc(target: string): gts.Settings {
