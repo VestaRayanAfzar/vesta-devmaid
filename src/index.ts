@@ -1,1 +1,2 @@
-export {TransformFunction, TargetConfig, TypescriptTarget} from "./TypescriptTarget";
+export {Indexer} from "./Indexer";
+export {Transformer, IPackagerConfig, Packager} from "./Packager";

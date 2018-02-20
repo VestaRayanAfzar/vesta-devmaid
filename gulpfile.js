@@ -1,18 +1,26 @@
-const vesta = require('./build/TypescriptTarget');
+const Indexer = require('./build/Indexer').Indexer;
+const Packager = require('./build/Packager').Packager;
 
-const aid = new vesta.TypescriptTarget({
-    genIndex: true,
+// creating index file
+const indexer = new Indexer(`${__dirname}/src`);
+indexer.generate();
+
+// creating packages
+const pkgr = new Packager({
+    root: __dirname,
+    src: "src",
     targets: ['es6'],
     files: ['.npmignore', 'LICENSE', 'README.md'],
+    publishParams: "--access=public",
     transform: {
         package: (json, target) => {
             json.devDependencies = {};
+            delete json.private;
         },
-        module: (target) => {
-            return {'x':'y'};
+        tsconfig: function (tsconfig, target, isProduction) {
+            tsconfig.compilerOptions.outDir = ".";
         }
-    },
-    publish: '--access=public'
+    }
 });
 
-aid.createTasks();
+pkgr.createTasks();

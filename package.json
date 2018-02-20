@@ -1,16 +1,15 @@
 {
   "name": "@vesta/devmaid",
-  "version": "0.2.7",
-  "description": "Vesta Develeopment assistant",
+  "version": "0.3.2",
+  "description": "A tool for building and publishing modules on multi ES targets",
   "license": "Apache-2.0",
   "main": "build/index.js",
   "typings": "index.d.ts",
   "repository": "https://github.com/VestaRayanAfzar/vesta-devmaid.git",
   "scripts": {
-    "dev": "tsc -w -p .",
-    "prepare": "gulp prepare",
-    "dev:es6": "gulp dev:es6",
-    "publish": "gulp publish"
+    "tsc": "tsc -w -p .",
+    "dev": "gulp dev[es6]",
+    "deploy": "gulp publish"
   },
   "author": "hbtb <bishehsary@gmail.com>",
   "contributors": [
@@ -25,6 +24,8 @@
     "gulp": "^3.9.1",
     "gulp-sourcemaps": "^2.6.0",
     "gulp-typescript": "^3.1.6",
+    "mkdirp": "^0.5.1",
+    "rimraf": "^2.6.2",
     "typescript": "^2.3.2"
   },
   "devDependencies": {
@@ -33,5 +34,6 @@
     "@types/gulp-sourcemaps": "^0.0.30",
     "@types/gulp-typescript": "^2.13.0",
     "@types/node": "^7.0.18"
-  }
+  },
+  "private": true
 }

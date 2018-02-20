@@ -1,51 +1,53 @@
-# [Vesta](http://vestarayanafzar.com) Development Assistant
- 
-Install `yarn`
+# [Vesta](https://vestarayanafzar.com) npm module development assistant
 
-Install `gulp` [`yarn add --dev gulp`]
+This package will help you to create multi-targeted npm package with the same code base.
 
-Inside your `gulpfile.js`:
+Let's conside a situation in which we want to generate module for both es5 and es6 names `awesome-module`.
+
+* add `@vesta/devmaid` to your `devDependencies`
+* inside your `gulpfile.js`:
 
 ```javascript
 const vesta = require('@vesta/devmaid');
 
-const config = {
-    // source directory address - gulp.src(`${config.src}/**`)
-    src: 'src',
-   // In case of multiple classes, an index file will be generated which exports all exports
-   genIndex: true,
-   // this will transpile typescript into both targets, each one in their own directory
-   // for es5, it appends the `-es5` to the end of your package name - Only if you have more than one target 
-   targets: ['es5', 'es6'],
-   // these files will be copied directly to the target folders
-   files: ['.npmignore', 'LICENSE', 'README.md'],
-   transform: {
-       // if you need to modify `package.json` for each target 
-       package: (json, target) => {
-           if(target === 'es5'){
-               json.dependencies.push('es6-promise', '^4.1.0');
-               json.name = 'mypkg-es5';
-           }
-       },
-       // if you need to modify `compilerOptions` of `tsconfig.json` for each target
-       tsconfig: (json, target) => {
-           if(process.env.mode === 'development'){
-               json.sourceMap = true;
-           }
-       }
-   },
-   // `npm publish` arguments
-   publish: '--access=public'
-};
+// In case of multiple classes, an index file will be generated which exports all you exported classes, functions, and variables
+const indexer = new vesta.Indexer(`${__dirname}/src`);
+indexer.generate();
 
-const aid = new vesta.TypescriptTarget();
-aid.createTasks();
+// creating packages
+const pkgr = new vesta.Packager({
+    // root directory of project
+    root: __dirname,
+    // source directory path - relative from root directory
+    src: 'src',
+    // this will transpile typescript into both targets, each one in their own directory
+    targets: ['es5', 'es6'],
+    // these files will be copied directly to the target folders
+    files: ['.npmignore', 'LICENSE', 'README.md'],
+    transform: {
+        // if you need to modify `package.json` for each target 
+        package: (json, target) => {
+            // modify package.json file based on your target
+            if(target === 'es5'){
+                json.dependencies.push('es6-promise', '^4.1.0');
+                json.name = 'awesome-module-es5';
+            }
+       },
+       // modify tsconfig.json file based on your target
+       tsconfig: (json, target) => {
+            // if you need to modify `compilerOptions` of `tsconfig.json` for each target
+            if(process.env.mode === 'development'){
+                json.sourceMap = true;
+            }
+        }
+    }
+});
+// creating development & publish tasks
+pkgr.createTasks();
 ```
 
-At this point based on your targets, multiple gulp tasks will be added to your gulp tasks:
-   * **prepare**: creates folders for each target, copy files into it, and run `yarn install`
-   * **dev:[target]**: starts development process for specific target
-   * **publish**: publishes the project inside each target folder
-   
-For `tsconfig` the following options will be ignored: `outFile`, `outDir`,
-and `target` will be override.
+At this point based on your targets, multiple tasks will be added:
+* **dev:[target]**: starts development process for specific target
+* **publish**: publishes the project inside each target folder
+
+For `tsconfig` the following options will be override: `outFile`, `outDir`, and `target`

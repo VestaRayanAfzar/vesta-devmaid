@@ -1,18 +1,19 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es6",
-    "preserveConstEnums": true,
+    "allowSyntheticDefaultImports": true,
     "declaration": true,
-    "outDir": "./build/"
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmitHelpers": true,
+    "outDir": "build",
+    "removeComments": true,
+    "sourceMap": false,
+    "target": "es6"
   },
   "include": [
     "src/**/*.ts"
   ],
   "exclude": [
-    "src/index.ts",
-    "node_modules",
-    "build",
-    "es6"
+    "build"
   ]
 }
