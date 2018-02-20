@@ -11,7 +11,7 @@ const pkgr = new Packager({
     src: "src",
     targets: ['es6'],
     files: ['.npmignore', 'LICENSE', 'README.md'],
-    publishParams: "--access=public",
+    publish: "--access=public",
     transform: {
         package: (json, target) => {
             json.devDependencies = {};

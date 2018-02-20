@@ -13,7 +13,7 @@ export interface IPackagerConfig {
     src: string;
     targets: Array<string>;
     files?: Array<string>;
-    publishParams?: string;
+    publish: string;
     transform?: {
         package?: Transformer;
         tsconfig?: Transformer;
@@ -24,7 +24,7 @@ export class Packager {
     private firstRun = true;
     private distBase = "vesta";
 
-    constructor(private config) {
+    constructor(private config: IPackagerConfig) {
     }
 
     public createTasks() {
@@ -63,7 +63,7 @@ export class Packager {
         const destDirectory = join(this.config.root, this.distBase, target);
         // const destDirectory = relative(__dirname, join(this.config.root, this.distBase, target));
         this.compile(target, true);
-        const publishParams = this.config.publishParams ? ` ${this.config.publishParams}` : "";
+        const publishParams = this.config.publish ? ` ${this.config.publish}` : "";
         this.exec(`npm publish${publishParams}`, destDirectory);
         this.log(`Finished publish[${target}]`);
     }
