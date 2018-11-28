@@ -1,19 +1,16 @@
 {
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "declaration": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "noEmitHelpers": true,
-    "outDir": "build",
-    "removeComments": true,
-    "sourceMap": false,
-    "target": "es6"
-  },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "build"
-  ]
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "outDir": "./build",
+        "strict": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "build"
+    ]
 }

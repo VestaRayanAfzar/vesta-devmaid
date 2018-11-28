@@ -1,8 +1,6 @@
-import { join, relative } from "path";
 import { execSync } from "child_process";
-import { copySync, readFileSync, writeFileSync } from "fs-extra";
-import { task, watch } from "gulp";
-import { Indexer } from "./Indexer";
+import { copySync, existsSync, readFileSync, writeFileSync } from "fs-extra";
+import { join, relative } from "path";
 const mkdir = require("mkdirp");
 const rimraf = require("rimraf");
 
@@ -21,8 +19,9 @@ export interface IPackagerConfig {
 }
 
 export class Packager {
-    private firstRun = true;
+    private firstRun: any = {};
     private distBase = "vesta";
+    private mainTarget = "";
 
     constructor(private config: IPackagerConfig) {
     }
@@ -30,64 +29,75 @@ export class Packager {
     public createTasks() {
         // creating development tasks
         this.config.targets.forEach(target => {
-            task(`dev[${target}]`, () => {
-                const { root, src } = this.config;
-                this.compile(target, false);
-                const srcDirectory = `${root}/${src}/**/*`;
-                watch(srcDirectory, () => {
-                    this.compile(target, false);
-                });
-            });
+            if (!this.mainTarget) {
+                this.mainTarget = target;
+            }
+            // task(`dev[${target}]`, () => {
+            // const { root, src } = this.config;
+            this.compile(target, false);
+            // const srcDirectory = `${root}/${src}/**/*`;
+            // watch(srcDirectory, () => {
+            //     this.compile(target, false);
+            // });
+            // });
         });
         // creating publish task
-        task("publish", () => {
-            this.config.targets.forEach(target => {
-                this.publish(target);
-            });
-        });
+        // task("publish", () => {
+        //     // this.config.targets.forEach(target => {
+        //     this.publish(this.config.targets[0]);
+        //     // });
+        // });
     }
 
-    private compile(target, isProduction) {
+    private compile(target: string, isProduction: boolean) {
         this.log(`Starting compile[${target}]`);
-        const destDirectory = `${this.distBase}/${target}`;
-        if (isProduction || this.firstRun) {
-            this.firstRun = false;
+        const isMain = target === this.mainTarget;
+        const destDirectory = join(this.distBase, this.mainTarget, isMain ? "" : target);
+        if (isProduction || this.firstRun[target]) {
+            this.firstRun[target] = false;
             this.prepare(target, isProduction);
         }
-        this.exec(`"${this.config.root}/${destDirectory}/node_modules/.bin/tsc"`, destDirectory);
+        let tsc = `"${this.config.root}/${destDirectory}/node_modules/.bin/tsc"`;
+        if(!existsSync(tsc)){
+            tsc = `"${this.config.root}/node_modules/.bin/tsc"`
+        }
+        this.exec(tsc, destDirectory);
         this.log(`Finished compile[${target}]`);
     }
 
-    private publish(target) {
+    private publish(target: string) {
         this.log(`Starting publish[${target}]`);
-        const destDirectory = join(this.config.root, this.distBase, target);
-        // const destDirectory = relative(__dirname, join(this.config.root, this.distBase, target));
+        // const destDirectory = join(this.config.root, this.distBase, target);
+        const destDirectory = relative(__dirname, join(this.config.root, this.distBase, target));
         this.compile(target, true);
         const publishParams = this.config.publish ? ` ${this.config.publish}` : "";
         this.exec(`npm publish${publishParams}`, destDirectory);
         this.log(`Finished publish[${target}]`);
     }
 
-    private prepare(target, isProduction) {
+    private prepare(target: string, isProduction: boolean) {
         this.log(`Starting prepare[${target}]`);
         const { root, files } = this.config;
-        const destDirectory = join(root, this.distBase, target);
+        const isMain = target === this.mainTarget;
+        const destDirectory = join(root, this.distBase, this.mainTarget, isMain ? "" : target);
         if (isProduction) {
             rimraf.sync(destDirectory);
         }
         mkdir.sync(destDirectory);
         // copying static files
-        files && files.forEach(file => {
+        isMain && files && files.forEach(file => {
             copySync(join(root, file), `${destDirectory}/${file}`);
         });
         // package.json
         let packageJson = JSON.parse(readFileSync("package.json", "utf8"));
+        let needUpdate = false;
         if (this.config.transform && this.config.transform.package) {
-            this.config.transform.package(packageJson, target, isProduction);
+            needUpdate = this.config.transform.package(packageJson, target, isProduction);
         }
         writeFileSync(`${destDirectory}/package.json`, JSON.stringify(packageJson, null, 2));
         // tsconfig.json
-        let tsconfigJson = JSON.parse(readFileSync("tsconfig.json", "utf8"));
+        const tsConfFile = existsSync(`tsconfig.${target}.json`) ? `tsconfig.${target}.json` : "tsconfig.json";
+        let tsconfigJson = JSON.parse(readFileSync(tsConfFile, "utf8"));
         if (this.config.transform && this.config.transform.tsconfig) {
             this.config.transform.tsconfig(tsconfigJson, target, isProduction);
         }
@@ -99,13 +109,15 @@ export class Packager {
             tsconfigJson.include.push(relative(join(root, this.distBase, target), join(root, oldPath[i])));
         }
         // overriding default options
-        tsconfigJson.compilerOptions.target = target;
+        // tsconfigJson.compilerOptions.target = target;
         tsconfigJson.compilerOptions.outDir = ".";
         delete tsconfigJson.compilerOptions.outFile;
         // saving to file
         writeFileSync(`${destDirectory}/tsconfig.json`, JSON.stringify(tsconfigJson, null, 2));
         // installing packages
-        this.exec("npm i", destDirectory);
+        if (needUpdate) {
+            this.exec("npm i", destDirectory);
+        }
         this.log(`Finished prepare[${target}]`);
     }
 
@@ -120,11 +132,11 @@ export class Packager {
         return false;
     }
 
-    private log(message) {
+    private log(message: string) {
         console.log(`[${this.getTime()}] ${message}`);
     }
 
-    private error(message, error) {
+    private error(message: string, error: string) {
         console.error(`[${this.getTime()}] ${message} (${error})`);
     }
 

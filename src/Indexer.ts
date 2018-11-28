@@ -8,7 +8,7 @@ export class Indexer {
 
     generate() {
         const contents = this.getAllExports(this.dir);
-        let codes = [];
+        const codes: string[] = [];
         contents.forEach(({ exports, file }) => {
             file = file.replace(this.dir, '.').replace(/\.[\w\d]+$/, '');
             if (exports.length) {
@@ -18,9 +18,9 @@ export class Indexer {
         writeFileSync(`${this.dir}/index.ts`, codes.join('\n'));
     }
 
-    private getAllExports(path) {
+    private getAllExports(path: string) {
         let files = readdirSync(path);
-        let contents = [];
+        let contents: any[] = [];
         files.forEach(file => {
             if (file == 'index.ts') return;
             let filePath = `${path}/${file}`;
@@ -34,8 +34,8 @@ export class Indexer {
         return contents;
     }
 
-    private getExportsOfSingleFile(file) {
-        let exports = [];
+    private getExportsOfSingleFile(file: string) {
+        let exports: string[] = [];
         let sourceCode = readFileSync(file, { encoding: 'utf8' }).toString();
         let srcFile = createSourceFile(file, sourceCode, ScriptTarget.ES2015, false);
         srcFile.forEachChild((node: any) => {

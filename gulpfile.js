@@ -9,16 +9,17 @@ indexer.generate();
 const pkgr = new Packager({
     root: __dirname,
     src: "src",
-    targets: ['es6'],
+    targets: ['es6', "es5"],
     files: ['.npmignore', 'LICENSE', 'README.md'],
     publish: "--access=public",
     transform: {
         package: (json, target) => {
             json.devDependencies = {};
             delete json.private;
+            return false;
         },
-        tsconfig: function (tsconfig, target, isProduction) {
-            tsconfig.compilerOptions.outDir = ".";
+        tsconfig: function(tsconfig, target, isProduction) {
+            // tsconfig.compilerOptions.outDir = ".";
         }
     }
 });
