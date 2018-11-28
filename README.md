@@ -21,7 +21,8 @@ const pkgr = new vesta.Packager({
     // source directory path - relative from root directory
     src: 'src',
     // this will transpile typescript into both targets, each one in their own directory
-    targets: ['es5', 'es6'],
+    // for the following targets, these gulp tasks will be created: dev[es6], dev[es5], watch[es6], watch[es5], publish
+    targets: ['es6', 'es5'],
     // these files will be copied directly to the target folders
     files: ['.npmignore', 'LICENSE', 'README.md'],
     transform: {
@@ -32,6 +33,8 @@ const pkgr = new vesta.Packager({
                 json.dependencies.push('es6-promise', '^4.1.0');
                 json.name = 'awesome-module-es5';
             }
+            // return true if the devmaid should execute npm install on new package.json file
+            return true;
        },
        // modify tsconfig.json file based on your target
        tsconfig: (json, target) => {
@@ -43,7 +46,7 @@ const pkgr = new vesta.Packager({
     }
 });
 // creating development & publish tasks
-pkgr.createTasks();
+module.exports = pkgr.createTasks();
 ```
 
 At this point based on your targets, multiple tasks will be added:

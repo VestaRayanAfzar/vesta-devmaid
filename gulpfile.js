@@ -1,5 +1,5 @@
-const Indexer = require('./build/Indexer').Indexer;
-const Packager = require('./build/Packager').Packager;
+const Indexer = require("./build/Indexer").Indexer;
+const Packager = require("./build/Packager").Packager;
 
 // creating index file
 const indexer = new Indexer(`${__dirname}/src`);
@@ -9,8 +9,8 @@ indexer.generate();
 const pkgr = new Packager({
     root: __dirname,
     src: "src",
-    targets: ['es6', "es5"],
-    files: ['.npmignore', 'LICENSE', 'README.md'],
+    targets: ["es6"],
+    files: [".npmignore", "LICENSE", "README.md"],
     publish: "--access=public",
     transform: {
         package: (json, target) => {
@@ -19,9 +19,10 @@ const pkgr = new Packager({
             return false;
         },
         tsconfig: function(tsconfig, target, isProduction) {
-            // tsconfig.compilerOptions.outDir = ".";
+            tsconfig.target = target;
+            // tsconfig.module = "umd";
         }
     }
 });
 
-pkgr.createTasks();
+module.exports = pkgr.createTasks();
