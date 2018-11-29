@@ -2,7 +2,7 @@
 
 This package will help you to create multi-targeted npm package with the same code base.
 
-Let's conside a situation in which we want to generate module for both es5 and es6 names `awesome-module`.
+Let's consider a situation in which we want to generate module for both es5 and es6 named `awesome-module`.
 
 * add `@vesta/devmaid` to your `devDependencies`
 * inside your `gulpfile.js`:
@@ -30,8 +30,7 @@ const pkgr = new vesta.Packager({
         package: (json, target) => {
             // modify package.json file based on your target
             if(target === 'es5'){
-                json.dependencies.push('es6-promise', '^4.1.0');
-                json.name = 'awesome-module-es5';
+                json.dependencies['es6-promise'] = '^4.1.0';
             }
             // return true if the devmaid should execute npm install on new package.json file
             return true;
@@ -40,7 +39,7 @@ const pkgr = new vesta.Packager({
        tsconfig: (json, target) => {
             // if you need to modify `compilerOptions` of `tsconfig.json` for each target
             if(process.env.mode === 'development'){
-                json.sourceMap = true;
+                json.compilerOptions.sourceMap = true;
             }
         }
     }
@@ -51,6 +50,9 @@ module.exports = pkgr.createTasks();
 
 At this point based on your targets, multiple tasks will be added:
 * **dev:[target]**: starts development process for specific target
-* **publish**: publishes the project inside each target folder
+* **publish**: publishes the project
+The published project is only specific for the first target, a sub directory will be generated
+for any of other targets. You may use alias naming in your bundler to choose the appropriate directory.
 
-For `tsconfig` the following options will be override: `outFile`, `outDir`, and `target`
+
+For `tsconfig` the following options will be override: `outFile`, `outDir`
