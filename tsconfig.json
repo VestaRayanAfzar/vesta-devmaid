@@ -11,6 +11,7 @@
         "src/**/*.ts"
     ],
     "exclude": [
-        "build"
+        "build",
+        "src/index.ts"
     ]
 }

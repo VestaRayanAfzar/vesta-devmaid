@@ -1,5 +1,10 @@
-import { createSourceFile, SyntaxKind, ScriptTarget } from "typescript";
-import { writeFileSync, readdirSync, statSync, readFileSync } from "fs-extra";
+import { readdirSync, readFileSync, statSync, writeFileSync } from "fs-extra";
+import { createSourceFile, ScriptTarget, SyntaxKind, isLabeledStatement } from "typescript";
+
+interface IExportItem {
+    name: string;
+    isDefault: boolean;
+}
 
 export class Indexer {
 
@@ -12,7 +17,7 @@ export class Indexer {
         contents.forEach(({ exports, file }) => {
             file = file.replace(this.dir, '.').replace(/\.[\w\d]+$/, '');
             if (exports.length) {
-                codes.push(`export {${exports.join(', ')}} from "${file}";`);
+                codes.push(`export { ${exports.join(", ")} } from "${file}";`);
             }
         });
         writeFileSync(`${this.dir}/index.ts`, codes.join('\n'));
@@ -41,6 +46,7 @@ export class Indexer {
         srcFile.forEachChild((node: any) => {
             let modifierKind = node.modifiers && node.modifiers[0].kind;
             if (modifierKind && modifierKind === SyntaxKind.ExportKeyword) {
+                let name = "";
                 switch (node.kind) {
                     case SyntaxKind.InterfaceDeclaration:
                     case SyntaxKind.ClassDeclaration:
@@ -48,10 +54,22 @@ export class Indexer {
                     case SyntaxKind.VariableDeclaration:
                     case SyntaxKind.EnumDeclaration:
                     case SyntaxKind.TypeAliasDeclaration:
-                        exports.push(node.name.text);
+                        name = node.name.text;
                         break;
                     case SyntaxKind.VariableStatement:
-                        exports.push(node.declarationList.declarations[0].name.text);
+                        name = node.declarationList.declarations[0].name.text;
+                        break;
+                }
+                if (name) {
+                    let isDefault = false;
+                    if (node.modifiers) {
+                        for (let i = 0, il = node.modifiers.length; i < il; ++i) {
+                            if (node.modifiers[i].kind === SyntaxKind.DefaultKeyword) {
+                                name = `default as ${name}`;
+                            }
+                        }
+                    }
+                    exports.push(name);
                 }
             }
         });
