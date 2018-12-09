@@ -48,6 +48,8 @@ const pkgr = new vesta.Packager({
 module.exports = pkgr.createTasks();
 ```
 
+use `gulp --tasks` to see list of generated tasks.
+
 At this point based on your targets, multiple tasks will be added:
 * **dev:[target]**: starts development process for specific target
 * **publish**: publishes the project

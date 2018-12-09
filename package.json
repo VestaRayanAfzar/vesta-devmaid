@@ -1,22 +1,22 @@
 {
   "name": "@vesta/devmaid",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "A tool for building and publishing modules on multi ES targets",
   "license": "Apache-2.0",
   "main": "build/index.js",
   "typings": "index.d.ts",
-  "repository": "https://github.com/VestaRayanAfzar/vesta-devmaid.git",
+  "repository": "https://github.com/vestaBoot/vesta-devmaid.git",
   "scripts": {
     "start": "tsc -w -p .",
     "dev": "gulp",
-    "deploy": "gulp publish"
+    "deploy": "gulp deplyAndPublish"
   },
   "author": "hbtb <bishehsary@gmail.com>",
   "contributors": [
     "javadkh2 <khalilian.javad@gmail.com>"
   ],
   "bugs": {
-    "url": "https://github.com/VestaRayanAfzar/vesta-devmaid/issues",
+    "url": "https://github.com/vestaBoot/vesta-devmaid/issues",
     "email": "bishehsary@gmail.com"
   },
   "dependencies": {

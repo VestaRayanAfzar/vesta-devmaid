@@ -10,8 +10,8 @@ export type Transformer = (config: any, target: string, isProduction: boolean) =
 export interface IPackagerConfig {
     root: string;
     src: string;
-    targets: Array<string>;
-    files?: Array<string>;
+    targets: string[];
+    files?: string[];
     publish: string;
     transform?: {
         package?: Transformer;
@@ -45,20 +45,29 @@ export class Packager {
                 return Promise.resolve();
             }
         }
-        // creating publish task
-        const publish = () => {
-            this.log(`Starting publish`);
+        const exportedTasks: any = {};
+        // creating production tasks
+        const deploy = () => {
+            this.log(`Starting production`);
             for (const target of targets) {
                 this.compile(target, true);
             }
+            this.log(`Finished production`);
+            return Promise.resolve();
+        }
+        exportedTasks.deploy = deploy;
+        // creating publish task
+        const publish = () => {
+            this.log(`Starting publish`);
             const destDirectory = join(this.distBase, this.mainTarget);
             const publishParams = this.config.publish ? ` ${this.config.publish}` : "";
             this.exec(`npm publish${publishParams}`, destDirectory);
             this.log(`Finished publish`);
             return Promise.resolve();
         }
+        exportedTasks.publish = publish;
+        exportedTasks.deplyAndPublish = series(deploy, publish);
         // exporting task list
-        const exportedTasks: any = {};
         for (const target of targets) {
             let taskName = `dev[${target}]`;
             if (target === this.mainTarget) {
