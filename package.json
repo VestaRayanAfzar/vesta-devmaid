@@ -1,6 +1,6 @@
 {
   "name": "@vesta/devmaid",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "A tool for building and publishing modules on multi ES targets",
   "license": "Apache-2.0",
   "main": "build/index.js",
