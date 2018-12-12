@@ -5,6 +5,7 @@
         "outDir": "./build",
         "strict": true,
         "allowSyntheticDefaultImports": true,
+        "isolatedModules": true,
         "esModuleInterop": true
     },
     "include": [
