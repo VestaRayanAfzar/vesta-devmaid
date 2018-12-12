@@ -5,14 +5,13 @@
         "outDir": "./build",
         "strict": true,
         "allowSyntheticDefaultImports": true,
-        "isolatedModules": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "declaration": true
     },
     "include": [
         "src/**/*.ts"
     ],
     "exclude": [
-        "build",
-        "src/index.ts"
+        "build"
     ]
 }

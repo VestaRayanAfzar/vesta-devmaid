@@ -1,9 +1,8 @@
-const Indexer = require("./build/Indexer").Indexer;
-const Packager = require("./build/Packager").Packager;
+const gulp = require("gulp");
+const { Indexer } = require("./build/Indexer");
+const { Packager } = require("./build/Packager");
 
-// creating index file
-const indexer = new Indexer(`${__dirname}/src`);
-indexer.generate();
+console.log(Packager);
 
 // creating packages
 const pkgr = new Packager({
@@ -24,5 +23,21 @@ const pkgr = new Packager({
         }
     }
 });
+const tasks = pkgr.createTasks();
 
-module.exports = pkgr.createTasks();
+// creating index file
+function indexer() {
+    const indexer = new Indexer("src");
+    indexer.generate();
+    return Promise.resolve();
+}
+
+function watch() {
+    gulp.watch(["src/**/*", "!src/index.ts"], indexer);
+    return Promise.resolve();
+}
+
+module.exports = {
+    default: gulp.series(indexer, tasks.default, watch),
+    publish: gulp.series(indexer, tasks.deploy, tasks.publish)
+}

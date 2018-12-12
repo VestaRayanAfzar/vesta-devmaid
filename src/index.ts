@@ -1,2 +1,5 @@
 export { Indexer } from "./Indexer";
-export { Transformer, IPackagerConfig, Packager } from "./Packager";
+import { Transformer, IPackagerConfig } from "./Packager";
+export type Transformer = Transformer;
+export type IPackagerConfig = IPackagerConfig;
+export { Packager } from "./Packager";

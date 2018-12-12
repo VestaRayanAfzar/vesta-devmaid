@@ -7,7 +7,7 @@ const rimraf = require("rimraf");
 
 export type Transformer = (config: any, target: string, isProduction: boolean) => any;
 
-export default interface IPackagerConfig<T> {
+export interface IPackagerConfig {
     root: string;
     src: string;
     targets: string[];
@@ -25,7 +25,7 @@ export class Packager {
     private distBase = "vesta";
     private mainTarget = "";
 
-    constructor(private config: IPackagerConfig<any>) {
+    constructor(private config: IPackagerConfig) {
     }
 
     public createTasks() {

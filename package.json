@@ -1,6 +1,6 @@
 {
   "name": "@vesta/devmaid",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "A tool for building and publishing modules on multi ES targets",
   "license": "Apache-2.0",
   "main": "build/index.js",
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "tsc -w -p .",
     "dev": "gulp",
-    "deploy": "gulp deplyAndPublish"
+    "deploy": "gulp publish"
   },
   "author": "hbtb <bishehsary@gmail.com>",
   "contributors": [
