@@ -1,9 +1,7 @@
 import { execSync } from "child_process";
-import { copySync, existsSync, readFileSync, writeFileSync, mkdirSync } from "fs-extra";
-import { series, watch } from "gulp";
+import { copySync, existsSync, mkdirpSync, readFileSync, rmdirSync, writeFileSync } from "fs-extra";
+import * as gulp from "gulp";
 import { join, relative } from "path";
-const mkdir = require("mkdirp");
-const rimraf = require("rimraf");
 
 export type Transformer = (config: any, isProduction: boolean) => any;
 
@@ -20,24 +18,24 @@ export interface IPackagerConfig {
 
 export class Packager {
     private hasRan: boolean = false;
-    private tasks: any = {};
+    // private tasks: any = {};
     private distBase = "vesta";
 
     constructor(private config: IPackagerConfig) {
     }
 
     public createTasks() {
+        const exportedTasks: any = {};
         const { root, src } = this.config;
         // creating development tasks
-        this.tasks.dev = () => this.compile(false);
+        const dev = () => this.compile(false);
         // watch[es6]
-        this.tasks.watch = () => {
+        const watch = () => {
             const srcDirectory = `${root}/${src}/**/*`;
-            watch(srcDirectory, () => this.compile(false));
+            gulp.watch(srcDirectory, () => this.compile(false));
             return Promise.resolve();
         }
 
-        const exportedTasks: any = {};
         // creating production tasks
         const deploy = () => {
             this.log(`Starting production`);
@@ -55,10 +53,10 @@ export class Packager {
             return Promise.resolve();
         }
         exportedTasks.publish = publish;
-        exportedTasks.deplyAndPublish = series(deploy, publish);
+        exportedTasks.deplyAndPublish = gulp.series(deploy, publish);
         // exporting task list
 
-        exportedTasks.default = series(this.tasks.dev, this.tasks.watch);
+        exportedTasks.default = gulp.series(dev, watch);
 
         exportedTasks.publish = publish;
         return exportedTasks;
@@ -83,10 +81,12 @@ export class Packager {
     private prepare(isProduction: boolean) {
         this.log(`Starting prepare...`);
         const { root, files } = this.config;
-        if (isProduction) {
-            rimraf.sync(this.distBase);
-        }
-        mkdirSync(this.distBase);
+        try {
+            rmdirSync(this.distBase);
+        } catch (e) { }
+        try {
+            mkdirpSync(this.distBase);
+        } catch (e) { }
         // copying static files
         if (files) {
             for (let i = 0, il = files.length; i < il; ++i) {

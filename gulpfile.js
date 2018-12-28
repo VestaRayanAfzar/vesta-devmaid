@@ -1,25 +1,20 @@
 const gulp = require("gulp");
-const { Indexer } = require("./build/Indexer");
+const { genIndex } = require("./build/Indexer");
 const { Packager } = require("./build/Packager");
-
-console.log(Packager);
 
 // creating packages
 const pkgr = new Packager({
     root: __dirname,
     src: "src",
-    targets: ["es6"],
     files: [".npmignore", "LICENSE", "README.md"],
     publish: "--access=public",
     transform: {
-        package: (json, target) => {
-            json.devDependencies = {};
+        package: (json) => {
             delete json.private;
             return false;
         },
-        tsconfig: function(tsconfig, target, isProduction) {
-            tsconfig.target = target;
-            // tsconfig.module = "umd";
+        tsconfig: function(tsconfig, isProduction) {
+            // tsconfig.compilerOptions.module = "umd";
         }
     }
 });
@@ -27,8 +22,7 @@ const tasks = pkgr.createTasks();
 
 // creating index file
 function indexer() {
-    const indexer = new Indexer("src");
-    indexer.generate();
+    genIndex("src");
     return Promise.resolve();
 }
 
