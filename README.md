@@ -1,8 +1,8 @@
 # [Vesta](https://vestarayanafzar.com) npm module development assistant
 
-This package will help you to create multi-targeted npm package with the same code base.
+This package will help you to create typescript based npm package.
 
-Let's consider a situation in which we want to generate module for both es5 and es6 named `awesome-module`.
+Let's consider a situation in which we want to generate module `awesome-module`.
 
 * add `@vesta/devmaid` to your `devDependencies`
 * inside your `gulpfile.js`:
@@ -20,9 +20,6 @@ const pkgr = new vesta.Packager({
     root: __dirname,
     // source directory path - relative from root directory
     src: 'src',
-    // this will transpile typescript into both targets, each one in their own directory
-    // for the following targets, these gulp tasks will be created: dev[es6], dev[es5], watch[es6], watch[es5], publish
-    targets: ['es6', 'es5'],
     // these files will be copied directly to the target folders
     files: ['.npmignore', 'LICENSE', 'README.md'],
     transform: {
@@ -49,12 +46,6 @@ module.exports = pkgr.createTasks();
 ```
 
 use `gulp --tasks` to see list of generated tasks.
-
-At this point based on your targets, multiple tasks will be added:
-* **dev:[target]**: starts development process for specific target
-* **publish**: publishes the project
-The published project is only specific for the first target, a sub directory will be generated
-for any of other targets. You may use alias naming in your bundler to choose the appropriate directory.
 
 
 For `tsconfig` the following options will be override: `outFile`, `outDir`
