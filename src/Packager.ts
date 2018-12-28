@@ -1,16 +1,15 @@
 import { execSync } from "child_process";
-import { copySync, existsSync, readFileSync, writeFileSync } from "fs-extra";
+import { copySync, existsSync, readFileSync, writeFileSync, mkdirSync } from "fs-extra";
 import { series, watch } from "gulp";
 import { join, relative } from "path";
 const mkdir = require("mkdirp");
 const rimraf = require("rimraf");
 
-export type Transformer = (config: any, target: string, isProduction: boolean) => any;
+export type Transformer = (config: any, isProduction: boolean) => any;
 
 export interface IPackagerConfig {
     root: string;
     src: string;
-    targets: string[];
     files?: string[];
     publish: string;
     transform?: {
@@ -20,38 +19,29 @@ export interface IPackagerConfig {
 }
 
 export class Packager {
-    private hasRan: any = {};
+    private hasRan: boolean = false;
     private tasks: any = {};
     private distBase = "vesta";
-    private mainTarget = "";
 
     constructor(private config: IPackagerConfig) {
     }
 
     public createTasks() {
-        const { targets, root, src } = this.config;
+        const { root, src } = this.config;
         // creating development tasks
-        for (const target of targets) {
-            // conside first target as main
-            if (!this.mainTarget) {
-                this.mainTarget = target;
-            }
-            // dev[es6]
-            this.tasks[`dev[${target}]`] = () => this.compile(target, false);
-            // watch[es6]
-            this.tasks[`watch[${target}]`] = () => {
-                const srcDirectory = `${root}/${src}/**/*`;
-                watch(srcDirectory, () => this.compile(target, false));
-                return Promise.resolve();
-            }
+        this.tasks.dev = () => this.compile(false);
+        // watch[es6]
+        this.tasks.watch = () => {
+            const srcDirectory = `${root}/${src}/**/*`;
+            watch(srcDirectory, () => this.compile(false));
+            return Promise.resolve();
         }
+
         const exportedTasks: any = {};
         // creating production tasks
         const deploy = () => {
             this.log(`Starting production`);
-            for (const target of targets) {
-                this.compile(target, true);
-            }
+            this.compile(true);
             this.log(`Finished production`);
             return Promise.resolve();
         }
@@ -59,88 +49,79 @@ export class Packager {
         // creating publish task
         const publish = () => {
             this.log(`Starting publish`);
-            const destDirectory = join(this.distBase, this.mainTarget);
             const publishParams = this.config.publish ? ` ${this.config.publish}` : "";
-            this.exec(`npm publish${publishParams}`, destDirectory);
+            this.exec(`npm publish${publishParams}`, this.distBase);
             this.log(`Finished publish`);
             return Promise.resolve();
         }
         exportedTasks.publish = publish;
         exportedTasks.deplyAndPublish = series(deploy, publish);
         // exporting task list
-        for (const target of targets) {
-            let taskName = `dev[${target}]`;
-            if (target === this.mainTarget) {
-                taskName = "default";
-            }
-            exportedTasks[taskName] = series(this.tasks[`dev[${target}]`], this.tasks[`watch[${target}]`]);
-        }
+
+        exportedTasks.default = series(this.tasks.dev, this.tasks.watch);
+
         exportedTasks.publish = publish;
         return exportedTasks;
     }
 
-    private compile(target: string, isProduction: boolean) {
-        this.log(`Starting compile[${target}]`);
-        const isMain = target === this.mainTarget;
-        const destDirectory = join(this.distBase, this.mainTarget, isMain ? "" : target);
-        if (isProduction || !this.hasRan[target]) {
-            this.hasRan[target] = true;
-            this.prepare(target, isProduction);
+    private compile(isProduction: boolean) {
+        this.log(`Starting compile...`);
+        const destDirectory = join(this.distBase);
+        if (isProduction || !this.hasRan) {
+            this.hasRan = true;
+            this.prepare(isProduction);
         }
         let tsc = `"${this.config.root}/${destDirectory}/node_modules/.bin/tsc"`;
         if (!existsSync(tsc)) {
             tsc = `"${this.config.root}/node_modules/.bin/tsc"`
         }
         const result = this.exec(tsc, destDirectory);
-        this.log(`Finished compile[${target}]`);
+        this.log(`Finished compile`);
         return Promise.resolve(result);
     }
 
-    private prepare(target: string, isProduction: boolean) {
-        this.log(`Starting prepare[${target}]`);
+    private prepare(isProduction: boolean) {
+        this.log(`Starting prepare...`);
         const { root, files } = this.config;
-        const isMain = target === this.mainTarget;
-        const destDirectory = join(root, this.distBase, this.mainTarget, isMain ? "" : target);
         if (isProduction) {
-            rimraf.sync(destDirectory);
+            rimraf.sync(this.distBase);
         }
-        mkdir.sync(destDirectory);
+        mkdirSync(this.distBase);
         // copying static files
-        if (isMain && files) {
+        if (files) {
             for (let i = 0, il = files.length; i < il; ++i) {
-                copySync(join(root, files[i]), `${destDirectory}/${files[i]}`);
+                copySync(join(root, files[i]), `${this.distBase}/${files[i]}`);
             }
         }
         // package.json
         let packageJson = JSON.parse(readFileSync("package.json", "utf8"));
         let needUpdate = false;
         if (this.config.transform && this.config.transform.package) {
-            needUpdate = this.config.transform.package(packageJson, target, isProduction);
+            needUpdate = this.config.transform.package(packageJson, isProduction);
         }
-        writeFileSync(`${destDirectory}/package.json`, JSON.stringify(packageJson, null, 2));
+        writeFileSync(`${this.distBase}/package.json`, JSON.stringify(packageJson, null, 2));
         // tsconfig.json
-        const tsConfFile = existsSync(`tsconfig.${target}.json`) ? `tsconfig.${target}.json` : "tsconfig.json";
-        let tsconfigJson = JSON.parse(readFileSync(tsConfFile, "utf8"));
+        let tsconfigJson = JSON.parse(readFileSync("tsconfig.json", "utf8"));
         if (this.config.transform && this.config.transform.tsconfig) {
-            this.config.transform.tsconfig(tsconfigJson, target, isProduction);
+            this.config.transform.tsconfig(tsconfigJson, isProduction);
         }
         // creating relative path for tsc
         // include directories
         let oldPath = tsconfigJson.include;
         tsconfigJson.include = [];
         for (let i = 0, il = oldPath.length; i < il; ++i) {
-            tsconfigJson.include.push(relative(destDirectory, join(root, oldPath[i])));
+            tsconfigJson.include.push(relative(this.distBase, join(root, oldPath[i])));
         }
         // overriding default options
         tsconfigJson.compilerOptions.outDir = ".";
         delete tsconfigJson.compilerOptions.outFile;
         // saving to file
-        writeFileSync(`${destDirectory}/tsconfig.json`, JSON.stringify(tsconfigJson, null, 2));
+        writeFileSync(`${this.distBase}/tsconfig.json`, JSON.stringify(tsconfigJson, null, 2));
         // installing packages
         if (needUpdate) {
-            this.exec("npm i", destDirectory);
+            this.exec("npm i", this.distBase);
         }
-        this.log(`Finished prepare[${target}]`);
+        this.log(`Finished prepare`);
     }
 
     private exec(command: string, cwd: string) {
